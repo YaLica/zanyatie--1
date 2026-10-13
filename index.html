@@ -57,6 +57,18 @@ img,video,audio{-webkit-touch-callout:none}img{-webkit-user-drag:none}
 .channel-button{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:44px;padding:10px 16px;border:1px solid #cdd7c6;border-radius:12px;color:var(--ink);font:14px Arial,sans-serif;text-decoration:none;transition:background .15s,border-color .15s}.channel-button span{font-size:17px;line-height:1}.channel-max{background:#eae5f2;border-color:#d9d0e6}.channel-telegram{background:#e0edf2;border-color:#c9dde5}.channel-button:hover{border-color:#879586;background:#fdfbf6}
 @media(max-width:620px){.brand-avatar{width:48px;height:48px}.brand{font-size:12px;gap:11px}.brand-tagline{font-size:14px;max-width:300px}.site-footer{align-items:flex-start;gap:14px;flex-direction:column}.footer-community{justify-content:flex-start;align-items:flex-start;flex-direction:column;gap:10px}.community-label{font-size:15px}.channel-button{padding:10px 15px}}
 @media(prefers-reduced-motion:reduce){.channel-button{transition:none}}
+
+/* Иллюстрация остаётся видимой при прокрутке задания и вопросов. */
+.lesson-illustration{position:sticky;top:0;z-index:5;margin:0;padding:8px 0;background:var(--paper);border-bottom:1px solid var(--line)}
+.lesson-illustration img{display:block;width:100%;height:46vh;height:46svh;object-fit:contain;border-radius:12px}
+.lesson-step{font-size:27px;font-weight:400;line-height:1.25;margin:28px 0 14px}
+#lessonMaterials .material{scroll-margin-top:calc(46svh + 24px)}
+.footer-author{display:block;font:inherit;margin-top:4px}
+@media(max-height:450px) and (orientation:landscape){
+#lessonMaterials{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+.lesson-illustration{top:8px;border-bottom:0}.lesson-illustration img{height:80vh;height:80svh}
+.lesson-task-content{min-width:0}.lesson-task-content .material:first-child{margin-top:0}
+}
 </style>
 </head>
 <body>
@@ -93,7 +105,7 @@ img,video,audio{-webkit-touch-callout:none}img{-webkit-user-drag:none}
  <div class="pdf-dialog-image"><img id="largePdfPreview" alt="" draggable="false"></div>
  <div class="pdf-dialog-footer"><a id="dialogDownload" class="download" download>Скачать PDF</a></div>
 </dialog>
-<footer class="site-footer"><span class="footer-brand">Скоро в школу</span><div class="footer-community"><span class="community-label">Учиться вместе с каналом</span><nav class="channel-links" aria-label="Наши каналы"><a class="channel-button channel-max" href="https://max.ru/join/7GgqgVmJiEVKrGTAPHKzm1-0tMqAwEvrZRcc2mH_MXI" target="_blank" rel="noopener noreferrer" aria-label="Открыть канал Скоро в школу в МАХ">МАХ <span aria-hidden="true">↗</span></a><a class="channel-button channel-telegram" href="https://t.me/skorouzheshkola" target="_blank" rel="noopener noreferrer" aria-label="Открыть канал Скоро в школу в Telegram">Telegram <span aria-hidden="true">↗</span></a></nav></div></footer>
+<footer class="site-footer"><span class="footer-brand">Скоро в школу<span class="footer-author">Автор Яна Лисица</span></span><div class="footer-community"><span class="community-label">Учиться вместе с каналом</span><nav class="channel-links" aria-label="Наши каналы"><a class="channel-button channel-max" href="https://max.ru/join/7GgqgVmJiEVKrGTAPHKzm1-0tMqAwEvrZRcc2mH_MXI" target="_blank" rel="noopener noreferrer" aria-label="Открыть канал Скоро в школу в МАХ">МАХ <span aria-hidden="true">↗</span></a><a class="channel-button channel-telegram" href="https://t.me/skorouzheshkola" target="_blank" rel="noopener noreferrer" aria-label="Открыть канал Скоро в школу в Telegram">Telegram <span aria-hidden="true">↗</span></a></nav></div></footer>
 <noscript><p class="noscript">Чтобы открыть разделы занятия, включите JavaScript в браузере.</p></noscript>
 </div>
 <script>
@@ -120,14 +132,14 @@ gym: { title: 'Упражнение «Улыбка»', text: 'Смотрим и 
 const LESSON = {
   "number": "1",
   "topic": "Развиваем умение составлять рассказ по иллюстрации. Учимся развёрнуто отвечать на вопросы.",
-  "introduction": "Посмотри задание. Затем по очереди включай вопросы и отвечай на них.",
+  "introduction": "",
   "filesCover": "обложка для файлв для скачивания.png",
   "gymCover": "обложка для артиекуляции.png",
   "materials": [
     {
-      "title": "Рассмотри иллюстрацию и послушай задание",
-      "type": "video",
-      "src": "Задание №1.mp4"
+      "title": "1. Рассмотри иллюстрацию, послушай и выполни задание.",
+      "type": "audio",
+      "src": "Задание(2).mp3"
     },
     {
       "title": "Вопрос № 1",
@@ -218,7 +230,8 @@ const LESSON = {
         "poster": "обложка для артиекуляции.png"
       }
     ]
-  }
+  },
+  "illustration": "Задание.jpeg"
 };
 /* ===== КОНЕЦ НАСТРОЕК ===== */
 // Превью листов встроены в HTML. Для другого занятия их нужно обновить вместе с PDF.
@@ -246,6 +259,24 @@ function renderMedia(container,items){
   media.addEventListener('error',()=>{error.hidden=false;});media.addEventListener('loadedmetadata',()=>{error.hidden=true;});
   block.append(media,error);container.append(block);
  });
+}
+function renderLesson(){
+ const container=$('lessonMaterials');
+ const figure=element('figure','lesson-illustration');
+ const image=element('img','');image.src=filePath(LESSON.illustration);
+ image.alt='Осенняя прогулка в парке: дети, взрослые, животные и птицы';
+ image.width=944;image.height=1113;image.draggable=false;
+ const error=element('p','media-error','Не удалось загрузить иллюстрацию. Обновите страницу и попробуйте ещё раз.');error.hidden=true;
+ image.addEventListener('error',()=>{error.hidden=false;});
+ image.addEventListener('load',()=>{error.hidden=true;});
+ figure.append(image,error);
+ const content=element('div','lesson-task-content');
+ const task=element('div','lesson-task');renderMedia(task,LESSON.materials.slice(0,1));
+ const heading=element('h2','lesson-step','2. Ответь на вопросы');heading.id='questionsTitle';
+ const questions=element('section','lesson-questions');questions.setAttribute('aria-labelledby','questionsTitle');
+ questions.append(heading);
+ renderMedia(questions,LESSON.materials.slice(1));
+ content.append(task,questions);container.append(figure,content);
 }
 let previewTrigger=null;
 function openPdfPreview(file,src,trigger){
@@ -285,7 +316,7 @@ if(LESSON.introduction){$('lessonLead').textContent=LESSON.introduction;$('lesso
 if(LESSON.gym.title)$('gymTitle').textContent=LESSON.gym.title;
 if(LESSON.gym.text)$('gymLead').textContent=LESSON.gym.text;
 cover('filesCover','filesPlaceholder',LESSON.filesCover);cover('gymCover','gymPlaceholder',LESSON.gymCover);
-renderMedia($('lessonMaterials'),LESSON.materials);renderMedia($('gymMaterials'),LESSON.gym.materials);renderPdfs();
+renderLesson();renderMedia($('gymMaterials'),LESSON.gym.materials);renderPdfs();
 const pages=['home','lesson','files','gym'];let currentPage='home';let homeScroll=0;
 function navigate(initial=false){
  const requested=location.hash.slice(1),target=pages.includes(requested)?requested:'home';
