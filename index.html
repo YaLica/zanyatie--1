@@ -69,6 +69,14 @@ img,video,audio{-webkit-touch-callout:none}img{-webkit-user-drag:none}
 .lesson-illustration{top:8px;border-bottom:0}.lesson-illustration img{height:80vh;height:80svh}
 .lesson-task-content{min-width:0}.lesson-task-content .material:first-child{margin-top:0}
 }
+
+.illustration-open{display:block;position:relative;width:100%;padding:0;border:0;background:transparent;color:var(--ink);cursor:zoom-in;font:inherit}
+.illustration-hint{position:absolute;right:8px;bottom:8px;padding:6px 10px;border-radius:9px;background:var(--white);font:12px Arial,sans-serif;box-shadow:0 1px 5px #0002}
+.illustration-dialog{position:fixed;inset:0;width:100%;max-width:none;height:100%;height:100dvh;max-height:none;margin:0;padding:0;border:0;background:#181c18;color:white;overflow:hidden}
+.illustration-dialog:not([open]){display:none}.illustration-dialog[open]{display:flex;flex-direction:column}
+.illustration-dialog::backdrop{background:#181c18}
+.illustration-dialog-head{display:flex;justify-content:flex-end;flex-shrink:0;padding:calc(8px + env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 8px 12px}
+.illustration-dialog img{display:block;width:100%;height:100%;min-height:0;flex:1;object-fit:contain;padding:0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 </style>
 </head>
 <body>
@@ -100,6 +108,10 @@ img,video,audio{-webkit-touch-callout:none}img{-webkit-user-drag:none}
 <section id="files" class="page" hidden aria-labelledby="filesTitle"><a class="back" href="#home"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg>Назад к занятию</a><h1 id="filesTitle" class="detail-title" tabindex="-1">Файлы для скачивания</h1><p class="detail-lead">Выберите материал, сохраните и распечатайте.</p><div id="pdfList"></div></section>
 <section id="gym" class="page" hidden aria-labelledby="gymTitle"><a class="back" href="#home"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg>Назад к занятию</a><h1 id="gymTitle" class="detail-title" tabindex="-1">Артикуляционное упражнение. «Улыбка»</h1><p id="gymLead" class="detail-lead">Это упражнение помогает ребёнку учиться осознанно управлять положением губ. Упражнение выполняют перед зеркалом, спокойно, без боли и чрезмерного напряжения.</p><div id="gymMaterials"></div></section>
 </main>
+<dialog id="illustrationDialog" class="illustration-dialog" aria-label="Иллюстрация на весь экран">
+<div class="illustration-dialog-head"><button id="closeIllustration" type="button" class="close-preview" autofocus>Вернуться к заданию ✕</button></div>
+<img id="fullIllustration" alt="Иллюстрация к заданию" draggable="false">
+</dialog>
 <dialog id="pdfDialog" class="pdf-dialog" aria-labelledby="pdfDialogTitle">
  <div class="pdf-dialog-head"><h2 id="pdfDialogTitle">Просмотр листа</h2><button type="button" id="closePdfDialog" class="close-preview" aria-label="Закрыть просмотр">Закрыть ✕</button></div>
  <div class="pdf-dialog-image"><img id="largePdfPreview" alt="" draggable="false"></div>
@@ -269,7 +281,9 @@ function renderLesson(){
  const error=element('p','media-error','Не удалось загрузить иллюстрацию. Обновите страницу и попробуйте ещё раз.');error.hidden=true;
  image.addEventListener('error',()=>{error.hidden=false;});
  image.addEventListener('load',()=>{error.hidden=true;});
- figure.append(image,error);
+ const opener=element('button','illustration-open');opener.type='button';opener.setAttribute('aria-label','Увеличить иллюстрацию на весь экран');opener.setAttribute('aria-haspopup','dialog');
+ opener.append(image,element('span','illustration-hint','Увеличить ⛶'));opener.addEventListener('click',()=>openIllustration(opener));
+ figure.append(opener,error);
  const content=element('div','lesson-task-content');
  const task=element('div','lesson-task');renderMedia(task,LESSON.materials.slice(0,1));
  const heading=element('h2','lesson-step','2. Ответь на вопросы');heading.id='questionsTitle';
@@ -278,6 +292,22 @@ function renderLesson(){
  renderMedia(questions,LESSON.materials.slice(1));
  content.append(task,questions);container.append(figure,content);
 }
+let illustrationTrigger=null,illustrationScroll=0,previousBodyStyle=null;
+function openIllustration(trigger){
+ if($('illustrationDialog').open)return;
+ illustrationTrigger=trigger;illustrationScroll=window.scrollY;
+ $('fullIllustration').src=filePath(LESSON.illustration);
+ previousBodyStyle=document.body.getAttribute('style');
+ document.body.style.position='fixed';document.body.style.top=-illustrationScroll+'px';document.body.style.width='100%';
+ $('illustrationDialog').showModal();
+}
+function closeIllustration(){if($('illustrationDialog').open)$('illustrationDialog').close();}
+$('closeIllustration').addEventListener('click',closeIllustration);
+$('illustrationDialog').addEventListener('close',()=>{
+ if(previousBodyStyle===null)document.body.removeAttribute('style');else document.body.setAttribute('style',previousBodyStyle);
+ window.scrollTo({top:illustrationScroll,behavior:'instant'});
+ if(illustrationTrigger&&illustrationTrigger.isConnected)illustrationTrigger.focus({preventScroll:true});
+});
 let previewTrigger=null;
 function openPdfPreview(file,src,trigger){
  pauseAll();previewTrigger=trigger;
@@ -321,7 +351,7 @@ const pages=['home','lesson','files','gym'];let currentPage='home';let homeScrol
 function navigate(initial=false){
  const requested=location.hash.slice(1),target=pages.includes(requested)?requested:'home';
  if(currentPage==='home'&&target!=='home')homeScroll=window.scrollY;
- closePdfPreview();pauseAll();pages.forEach(id=>{$(id).hidden=id!==target;});
+ closeIllustration();closePdfPreview();pauseAll();pages.forEach(id=>{$(id).hidden=id!==target;});
  const previous=currentPage;currentPage=target;
  if(!initial){
   window.scrollTo({top:target==='home'?homeScroll:0,behavior:'instant'});
